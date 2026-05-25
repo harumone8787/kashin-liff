@@ -417,8 +417,9 @@
   // ========================
   // 設定（後でここを変更してください）
   // ========================
-  var LIFF_ID  = "2010184466-LzhabERU";  // LINE Developersで取得したLIFF ID
-  var GAS_URL  = "https://script.google.com/macros/s/AKfycbzH9loWXJnlsW8gvX92uMAGftM5z43DBRSdPZeFowWP6KpV1Yxuo_XMEIPI80RHD1RJ/exec";
+  var LIFF_ID     = "2010184466-LzhabERU";  // LINE Developersで取得したLIFF ID
+  var GAS_URL     = "https://script.google.com/macros/s/AKfycbzH9loWXJnlsW8gvX92uMAGftM5z43DBRSdPZeFowWP6KpV1Yxuo_XMEIPI80RHD1RJ/exec";
+  var lineUserId  = null;  // LIFF初期化後にセット
 
   // ========================
   // 商品データ
@@ -450,10 +451,23 @@
   // ========================
   // LIFF 初期化
   // ========================
-  liff.init({ liffId: LIFF_ID }).catch(function(err) {
-    // LIFFブラウザ外（テスト用）でも動作する
-    console.log("LIFF init error (ok for testing):", err);
-  });
+  liff.init({ liffId: LIFF_ID })
+    .then(function() {
+      try {
+        var ctx = liff.getContext();
+        if (ctx && ctx.userId) {
+          lineUserId = ctx.userId;
+          console.log("LIFF init OK, userId:", lineUserId);
+        } else {
+          console.log("LIFF init OK, userId: なし（LINE外アクセスの可能性）");
+        }
+      } catch(e) {
+        console.log("getContext error:", e);
+      }
+    })
+    .catch(function(err) {
+      console.log("LIFF init error (ok for testing):", err);
+    });
 
   // ========================
   // 来店日の生成（翌日〜30日先、日曜除外）
@@ -640,11 +654,8 @@
 
     var data = getValues();
 
-    // LINE ユーザーIDを付与（取得できる場合）
-    try {
-      var ctx = liff.getContext();
-      if (ctx && ctx.userId) data.lineUserId = ctx.userId;
-    } catch(e) {}
+    // LINE ユーザーIDを付与（LIFF初期化時に取得済み）
+    if (lineUserId) data.lineUserId = lineUserId;
 
     fetch(GAS_URL, {
       method:  "POST",
