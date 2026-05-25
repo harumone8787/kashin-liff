@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>来店予約 | 季節の花 花心</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+      background: #fdf6f0;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 32px;
+    }
+
+    /* ヘッダー */
+    .header {
+      background: linear-gradient(135deg, #d4a8b8, #b87898);
+      color: white;
+      text-align: center;
+      padding: 28px 16px 20px;
+    }
+    .header h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
+    .header p  { font-size: 13px; opacity: 0.88; }
+
+    /* フォームコンテナ */
+    .form-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* セクション */
+    .section {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #b87898;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f5e0e8;
+    }
+
+    /* フォームグループ */
+    .form-group { margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .required { color: #d95c7a; margin-left: 3px; }
+
+    select, input[type="text"], input[type="tel"], textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e0d5d0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+      color: #333;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23b87898' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+      cursor: pointer;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #b87898;
+      box-shadow: 0 0 0 3px rgba(184,120,152,0.15);
+    }
+    select:disabled {
+      background-color: #f8f8f8;
+      color: #aaa;
+      cursor: not-allowed;
+    }
+    textarea {
+      height: 90px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    /* 非表示 */
+    .hidden { display: none !important; }
+
+    /* 送信ボタン */
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #d4a8b8, #b87898);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-submit:active { opacity: 0.85; transform: scale(0.99); }
+
+    /* ========== 確認画面 ========== */
+    #confirmScreen {
+      display: none;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .confirm-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      margin-bottom: 14px;
+    }
+    .confirm-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #b87898;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .confirm-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f5e0e8;
+      font-size: 14px;
+      gap: 8px;
+    }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-label { color: #999; width: 80px; flex-shrink: 0; padding-top: 1px; }
+    .confirm-value { color: #333; font-weight: bold; flex: 1; line-height: 1.5; }
+
+    .btn-group { display: flex; gap: 10px; }
+    .btn-back {
+      flex: 1;
+      padding: 14px;
+      background: #f0f0f0;
+      color: #555;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-confirm {
+      flex: 2;
+      padding: 14px;
+      background: linear-gradient(135deg, #d4a8b8, #b87898);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-confirm:active { opacity: 0.85; }
+
+    /* ========== 完了画面 ========== */
+    #completeScreen {
+      display: none;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      text-align: center;
+    }
+    .complete-icon { font-size: 72px; margin: 36px 0 16px; }
+    .complete-title { font-size: 22px; font-weight: bold; color: #b87898; margin-bottom: 14px; }
+    .complete-msg {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.9;
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    .btn-close {
+      padding: 14px 48px;
+      background: linear-gradient(135deg, #d4a8b8, #b87898);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ========== ローディング ========== */
+    #loading {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 999;
+    }
+    #loading.show { display: flex; }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #f5e0e8;
+      border-top-color: #b87898;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: #b87898; font-weight: bold; font-size: 14px; }
+
+    /* エラーメッセージ */
+    .error-msg {
+      color: #d95c7a;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    /* 注意テキスト */
+    .note {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p>送信中...</p>
+</div>
+
+<!-- ===== フォーム画面 ===== -->
+<div id="formScreen">
+  <div class="header">
+    <h1>🌸 季節の花 花心</h1>
+    <p>来店予約フォーム</p>
+  </div>
+
+  <form id="reservationForm" class="form-container" novalidate>
+
+    <!-- ご注文内容 -->
+    <div class="section">
+      <div class="section-title">💐 ご注文内容</div>
+
+      <div class="form-group">
+        <label>商品<span class="required">*</span></label>
+        <select id="product" required>
+          <option value="">選んでください</option>
+          <option value="花束">花束</option>
+          <option value="アレンジ">アレンジ</option>
+          <option value="スタンディングエコブーケ">スタンディングエコブーケ</option>
+          <option value="胡蝶蘭">胡蝶蘭</option>
+        </select>
+        <div class="error-msg" id="err-product">商品を選んでください</div>
+      </div>
+
+      <div class="form-group">
+        <label>価格<span class="required">*</span></label>
+        <select id="price" required disabled>
+          <option value="">先に商品を選んでください</option>
+        </select>
+        <div class="error-msg" id="err-price">価格を選んでください</div>
+      </div>
+
+      <div class="form-group">
+        <label>色目<span class="required">*</span></label>
+        <select id="color" required disabled>
+          <option value="">先に商品を選んでください</option>
+        </select>
+        <div class="error-msg" id="err-color">色目を選んでください</div>
+      </div>
+
+      <div class="form-group hidden" id="moodGroup">
+        <label>雰囲気<span class="required">*</span></label>
+        <select id="mood">
+          <option value="">選んでください</option>
+          <option value="豪華">豪華</option>
+          <option value="華やか">華やか</option>
+          <option value="かわいく">かわいく</option>
+          <option value="シック">シック</option>
+          <option value="お任せ">お任せ</option>
+        </select>
+        <div class="error-msg" id="err-mood">雰囲気を選んでください</div>
+      </div>
+
+      <div class="form-group">
+        <label>その他ご要望</label>
+        <textarea id="remarks" placeholder="例：誕生日プレゼントです。明るい雰囲気でお願いします。&#10;（なければ空欄で大丈夫です）" maxlength="1000"></textarea>
+        <div class="note">※ 1000文字以内</div>
+      </div>
+    </div>
+
+    <!-- お客様情報 -->
+    <div class="section">
+      <div class="section-title">👤 お客様情報</div>
+
+      <div class="form-group">
+        <label>お名前<span class="required">*</span></label>
+        <input type="text" id="customerName" placeholder="例：田中 花子" maxlength="50" required>
+        <div class="error-msg" id="err-name">お名前を入力してください</div>
+      </div>
+
+      <div class="form-group">
+        <label>電話番号<span class="required">*</span></label>
+        <input type="tel" id="phone" placeholder="例：090-1234-5678" maxlength="20" required>
+        <div class="error-msg" id="err-phone">電話番号を入力してください</div>
+      </div>
+    </div>
+
+    <!-- 来店日時 -->
+    <div class="section">
+      <div class="section-title">📅 来店日時</div>
+
+      <div class="form-group">
+        <label>来店日<span class="required">*</span></label>
+        <select id="date" required>
+          <option value="">選んでください</option>
+        </select>
+        <div class="note">※ 日曜・今日は除外しています</div>
+        <div class="error-msg" id="err-date">来店日を選んでください</div>
+      </div>
+
+      <div class="form-group">
+        <label>来店時間<span class="required">*</span></label>
+        <select id="time" required>
+          <option value="">選んでください</option>
+          <option value="09:00">09:00</option>
+          <option value="10:00">10:00</option>
+          <option value="11:00">11:00</option>
+          <option value="12:00">12:00</option>
+          <option value="13:00">13:00</option>
+          <option value="14:00">14:00</option>
+          <option value="15:00">15:00</option>
+          <option value="16:00">16:00</option>
+          <option value="17:00">17:00</option>
+          <option value="18:00">18:00</option>
+        </select>
+        <div class="error-msg" id="err-time">来店時間を選んでください</div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit">内容を確認する →</button>
+  </form>
+</div>
+
+<!-- ===== 確認画面 ===== -->
+<div id="confirmScreen">
+  <div class="header">
+    <h1>🌸 季節の花 花心</h1>
+    <p>予約内容の確認</p>
+  </div>
+  <div style="padding:16px">
+    <div class="confirm-card">
+      <div class="confirm-title">以下の内容でよろしいですか？</div>
+      <div class="confirm-row"><span class="confirm-label">商品</span><span class="confirm-value" id="c-product"></span></div>
+      <div class="confirm-row"><span class="confirm-label">価格</span><span class="confirm-value" id="c-price"></span></div>
+      <div class="confirm-row"><span class="confirm-label">色目</span><span class="confirm-value" id="c-color"></span></div>
+      <div class="confirm-row" id="c-mood-row"><span class="confirm-label">雰囲気</span><span class="confirm-value" id="c-mood"></span></div>
+      <div class="confirm-row" id="c-remarks-row"><span class="confirm-label">ご要望</span><span class="confirm-value" id="c-remarks"></span></div>
+      <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-value" id="c-name"></span></div>
+      <div class="confirm-row"><span class="confirm-label">電話番号</span><span class="confirm-value" id="c-phone"></span></div>
+      <div class="confirm-row"><span class="confirm-label">来店日</span><span class="confirm-value" id="c-date"></span></div>
+      <div class="confirm-row"><span class="confirm-label">来店時間</span><span class="confirm-value" id="c-time"></span></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn-back" onclick="backToForm()">← 修正する</button>
+      <button class="btn-confirm" onclick="submitOrder()">予約を確定する ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 完了画面 ===== -->
+<div id="completeScreen">
+  <div class="header">
+    <h1>🌸 季節の花 花心</h1>
+    <p>来店予約フォーム</p>
+  </div>
+  <div style="padding:16px; text-align:center;">
+    <div class="complete-icon">✅</div>
+    <div class="complete-title">ご予約ありがとうございます！</div>
+    <div class="complete-msg" id="complete-msg"></div>
+    <button class="btn-close" onclick="closeLiff()">LINEに戻る</button>
+  </div>
+</div>
+
+<script>
+  // ========================
+  // 設定（後でここを変更してください）
+  // ========================
+  var LIFF_ID  = "YOUR_LIFF_ID_HERE";   // LINE Developersで取得したLIFF ID
+  var GAS_URL  = "YOUR_GAS_URL_HERE";   // GASウェブアプリのURL
+
+  // ========================
+  // 商品データ
+  // ※ 花束・アレンジの価格は正しい金額に修正してください
+  // ========================
+  var PRODUCTS = {
+    "花束": {
+      prices: [4400, 5500, 6600, 7700, 8800, 9900, 11000],
+      colors: ["レッド", "ピンク", "イエローオレンジ", "ブルーパープル", "ホワイト", "お任せ"],
+      hasMood: true
+    },
+    "アレンジ": {
+      prices: [4400, 5500, 6600, 7700, 8800, 9900, 11000],
+      colors: ["レッド", "ピンク", "イエローオレンジ", "ブルーパープル", "ホワイト", "お任せ"],
+      hasMood: true
+    },
+    "スタンディングエコブーケ": {
+      prices: [3850, 4400, 5500, 6600, 7700, 8800, 9900, 11000],
+      colors: ["レッド", "ピンク", "イエローオレンジ", "ブルーパープル", "ホワイト", "お任せ"],
+      hasMood: true
+    },
+    "胡蝶蘭": {
+      prices: [16500, 22000, 33000, 44000, 55000, 66000, 77000, 88000, 99000, 110000],
+      colors: ["白", "ピンク"],
+      hasMood: false
+    }
+  };
+
+  // ========================
+  // LIFF 初期化
+  // ========================
+  liff.init({ liffId: LIFF_ID }).catch(function(err) {
+    // LIFFブラウザ外（テスト用）でも動作する
+    console.log("LIFF init error (ok for testing):", err);
+  });
+
+  // ========================
+  // 来店日の生成（翌日〜30日先、日曜除外）
+  // ========================
+  (function generateDates() {
+    var select = document.getElementById("date");
+    var today  = new Date();
+    var wdays  = ["日","月","火","水","木","金","土"];
+    var count  = 0;
+    for (var i = 1; count < 30; i++) {
+      var d = new Date(today);
+      d.setDate(today.getDate() + i);
+      if (d.getDay() === 0) continue;
+      var y  = d.getFullYear();
+      var m  = String(d.getMonth() + 1).padStart(2, "0");
+      var dd = String(d.getDate()).padStart(2, "0");
+      var wd = wdays[d.getDay()];
+      var opt = document.createElement("option");
+      opt.value       = y + "/" + m + "/" + dd;
+      opt.textContent = y + "年" + Number(m) + "月" + Number(dd) + "日（" + wd + "）";
+      select.appendChild(opt);
+      count++;
+    }
+  })();
+
+  // ========================
+  // 商品変更 → 価格・色・雰囲気を動的更新
+  // ========================
+  document.getElementById("product").addEventListener("change", function() {
+    var product     = this.value;
+    var priceSelect = document.getElementById("price");
+    var colorSelect = document.getElementById("color");
+    var moodGroup   = document.getElementById("moodGroup");
+    var moodSelect  = document.getElementById("mood");
+
+    priceSelect.innerHTML = "<option value=''>選んでください</option>";
+    colorSelect.innerHTML = "<option value=''>選んでください</option>";
+    moodSelect.value = "";
+
+    if (!product) {
+      priceSelect.disabled = true;
+      colorSelect.disabled = true;
+      moodGroup.classList.add("hidden");
+      return;
+    }
+
+    var data = PRODUCTS[product];
+
+    data.prices.forEach(function(p) {
+      var opt = document.createElement("option");
+      opt.value = p + "円";
+      opt.textContent = "¥" + p.toLocaleString();
+      priceSelect.appendChild(opt);
+    });
+    priceSelect.disabled = false;
+
+    data.colors.forEach(function(c) {
+      var opt = document.createElement("option");
+      opt.value = opt.textContent = c;
+      colorSelect.appendChild(opt);
+    });
+    colorSelect.disabled = false;
+
+    if (data.hasMood) {
+      moodGroup.classList.remove("hidden");
+    } else {
+      moodGroup.classList.add("hidden");
+      moodSelect.value = "";
+    }
+  });
+
+  // ========================
+  // バリデーション
+  // ========================
+  function validate() {
+    var ok = true;
+    var fields = [
+      { id: "product",      err: "err-product" },
+      { id: "price",        err: "err-price"   },
+      { id: "color",        err: "err-color"   },
+      { id: "customerName", err: "err-name"    },
+      { id: "phone",        err: "err-phone"   },
+      { id: "date",         err: "err-date"    },
+      { id: "time",         err: "err-time"    },
+    ];
+    fields.forEach(function(f) {
+      var el  = document.getElementById(f.id);
+      var err = document.getElementById(f.err);
+      if (!el.value.trim()) {
+        err.style.display = "block";
+        ok = false;
+      } else {
+        err.style.display = "none";
+      }
+    });
+
+    var product    = document.getElementById("product").value;
+    var moodGroup  = document.getElementById("moodGroup");
+    var moodSelect = document.getElementById("mood");
+    var moodErr    = document.getElementById("err-mood");
+    if (product && PRODUCTS[product] && PRODUCTS[product].hasMood && !moodSelect.value) {
+      moodErr.style.display = "block";
+      ok = false;
+    } else {
+      moodErr.style.display = "none";
+    }
+
+    return ok;
+  }
+
+  // ========================
+  // フォーム送信 → 確認画面へ
+  // ========================
+  document.getElementById("reservationForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    if (!validate()) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    showConfirm();
+  });
+
+  function showConfirm() {
+    var vals = getValues();
+    document.getElementById("c-product").textContent = vals.product;
+    document.getElementById("c-price").textContent   = vals.price;
+    document.getElementById("c-color").textContent   = vals.color;
+
+    var moodRow = document.getElementById("c-mood-row");
+    if (vals.mood) {
+      document.getElementById("c-mood").textContent = vals.mood;
+      moodRow.style.display = "flex";
+    } else {
+      moodRow.style.display = "none";
+    }
+
+    var remarksRow = document.getElementById("c-remarks-row");
+    if (vals.remarks) {
+      document.getElementById("c-remarks").textContent = vals.remarks;
+      remarksRow.style.display = "flex";
+    } else {
+      remarksRow.style.display = "none";
+    }
+
+    document.getElementById("c-name").textContent  = vals.customerName;
+    document.getElementById("c-phone").textContent = vals.phone;
+    document.getElementById("c-date").textContent  = document.getElementById("date").options[document.getElementById("date").selectedIndex].text;
+    document.getElementById("c-time").textContent  = vals.time;
+
+    document.getElementById("formScreen").style.display    = "none";
+    document.getElementById("confirmScreen").style.display = "block";
+    window.scrollTo(0, 0);
+  }
+
+  function backToForm() {
+    document.getElementById("confirmScreen").style.display = "none";
+    document.getElementById("formScreen").style.display    = "block";
+    window.scrollTo(0, 0);
+  }
+
+  // ========================
+  // フォームの値を取得
+  // ========================
+  function getValues() {
+    return {
+      product:      document.getElementById("product").value,
+      price:        document.getElementById("price").value,
+      color:        document.getElementById("color").value,
+      mood:         document.getElementById("mood").value,
+      remarks:      document.getElementById("remarks").value.trim(),
+      customerName: document.getElementById("customerName").value.trim(),
+      phone:        document.getElementById("phone").value.trim(),
+      date:         document.getElementById("date").value,
+      time:         document.getElementById("time").value,
+      source:       "LIFF"
+    };
+  }
+
+  // ========================
+  // 予約確定 → GASへ送信
+  // ========================
+  function submitOrder() {
+    document.getElementById("loading").classList.add("show");
+
+    var data = getValues();
+
+    // LINE ユーザーIDを付与（取得できる場合）
+    try {
+      var ctx = liff.getContext();
+      if (ctx && ctx.userId) data.lineUserId = ctx.userId;
+    } catch(e) {}
+
+    fetch(GAS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain" },
+      body:    JSON.stringify(data)
+    })
+    .then(function(res) { return res.text(); })
+    .then(function() {
+      document.getElementById("loading").classList.remove("show");
+      showComplete(data);
+    })
+    .catch(function(err) {
+      document.getElementById("loading").classList.remove("show");
+      alert("送信に失敗しました。\nお手数ですが、お電話でご予約ください。\n\nエラー: " + err.message);
+    });
+  }
+
+  function showComplete(data) {
+    document.getElementById("confirmScreen").style.display  = "none";
+    document.getElementById("completeScreen").style.display = "block";
+
+    var dateLabel = document.getElementById("c-date").textContent;
+    document.getElementById("complete-msg").innerHTML =
+      "<strong>" + data.customerName + "</strong> 様<br><br>" +
+      dateLabel + "<br>" +
+      data.time + " のご来店を<br>お待ちしております。🌸<br><br>" +
+      "ご不明な点はLINEまたは<br>お電話にてお問い合わせください。";
+    window.scrollTo(0, 0);
+  }
+
+  function closeLiff() {
+    try { liff.closeWindow(); } catch(e) { window.close(); }
+  }
+</script>
+</body>
+</html>
