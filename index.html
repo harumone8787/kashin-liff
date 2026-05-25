@@ -419,10 +419,7 @@
   // ========================
   var LIFF_ID     = "2010192075-KgWQQFNC";  // LINE Developersで取得したLIFF ID
   var GAS_URL     = "https://script.google.com/macros/s/AKfycbwlPVCluRYMixVUFnjFIK8qyod8QMgnfqJQo2iKaKkvDgcfMqnXmAIR-FkPTfKdVnK0/exec";
-  // URLパラメータ ?uid=... からuserIdを取得（LINEボットが埋め込む）
-  var lineUserId  = (function() {
-    try { return new URLSearchParams(window.location.search).get("uid") || null; } catch(e) { return null; }
-  })();
+  var lineUserId = null;
 
   // ========================
   // 商品データ
@@ -454,10 +451,26 @@
   // ========================
   // LIFF 初期化
   // ========================
-  console.log("uid from URL:", lineUserId);
   liff.init({ liffId: LIFF_ID })
     .then(function() {
-      console.log("LIFF init OK");
+      // init完了後にURLパラメータを読む（liff.stateが処理された後）
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var uid = params.get("uid");
+        if (uid) {
+          lineUserId = uid;
+        } else {
+          // liff.state に含まれている場合
+          var state = params.get("liff.state");
+          if (state) {
+            var inner = new URLSearchParams(decodeURIComponent(state).replace(/^\/?/, ""));
+            lineUserId = inner.get("uid") || null;
+          }
+        }
+        console.log("lineUserId:", lineUserId);
+      } catch(e) {
+        console.log("uid取得エラー:", e);
+      }
     })
     .catch(function(err) {
       console.log("LIFF init error:", err);
