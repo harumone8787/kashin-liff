@@ -453,20 +453,32 @@
   // ========================
   liff.init({ liffId: LIFF_ID })
     .then(function() {
+      // getContext でuserIdを取得（LINE内WebView）
       try {
         var ctx = liff.getContext();
         if (ctx && ctx.userId) {
           lineUserId = ctx.userId;
-          console.log("LIFF init OK, userId:", lineUserId);
-        } else {
-          console.log("LIFF init OK, userId: なし（LINE外アクセスの可能性）");
+          console.log("userId(context):", lineUserId);
+          return;
         }
-      } catch(e) {
-        console.log("getContext error:", e);
+      } catch(e) {}
+
+      // getProfile でuserIdを取得（LINE Loginチャンネル）
+      if (liff.isLoggedIn()) {
+        liff.getProfile()
+          .then(function(profile) {
+            lineUserId = profile.userId;
+            console.log("userId(profile):", lineUserId);
+          })
+          .catch(function(e) {
+            console.log("getProfile error:", e);
+          });
+      } else {
+        console.log("LINEログインなし（LINE外アクセスの可能性）");
       }
     })
     .catch(function(err) {
-      console.log("LIFF init error (ok for testing):", err);
+      console.log("LIFF init error:", err);
     });
 
   // ========================
