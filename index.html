@@ -417,8 +417,9 @@
   // ========================
   // 設定（後でここを変更してください）
   // ========================
-  var LIFF_ID     = "2010192075-KgWQQFNC";  // LINE Developersで取得したLIFF ID
-  var GAS_URL     = "https://script.google.com/macros/s/AKfycbzyT5JvQtDS-yxIUZUPOw1AfSf79DirFhBme3fnBZjnyoOr5vL167w2Vrrl6BHF4F9g/exec";
+  var LIFF_ID   = "2010192075-KgWQQFNC";
+  var API_URL   = "https://customer.yscreation.net/api/line-reservation";
+  var API_TOKEN = "9226343bf2d73dd66fe89f4ade5fde1c";
   var lineUserId = null;
 
   // ========================
@@ -654,25 +655,30 @@
   }
 
   // ========================
-  // 予約確定 → GASへ送信
+  // 予約確定 → customer-system へ送信
   // ========================
   function submitOrder() {
     document.getElementById("loading").classList.add("show");
 
     var data = getValues();
-
-    // LINE ユーザーIDを付与（LIFF初期化時に取得済み）
     if (lineUserId) data.lineUserId = lineUserId;
 
-    fetch(GAS_URL, {
+    fetch(API_URL, {
       method:  "POST",
-      headers: { "Content-Type": "text/plain" },
-      body:    JSON.stringify(data)
+      headers: {
+        "Content-Type":        "application/json",
+        "X-Reservation-Token": API_TOKEN
+      },
+      body: JSON.stringify(data)
     })
-    .then(function(res) { return res.text(); })
-    .then(function() {
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
       document.getElementById("loading").classList.remove("show");
-      showComplete(data);
+      if (result.success) {
+        showComplete(data);
+      } else {
+        alert("送信に失敗しました。\nお手数ですが、お電話でご予約ください。");
+      }
     })
     .catch(function(err) {
       document.getElementById("loading").classList.remove("show");
