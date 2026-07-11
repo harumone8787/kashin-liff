@@ -454,8 +454,28 @@
   // ========================
   liff.init({ liffId: LIFF_ID })
     .then(function() {
-      // 本命：LIFFプロフィールからuserIdを取得（LINEアプリ内で開けば必ず取れる）
-      if (liff.isLoggedIn()) {
+      // ① getContext：LINEアプリ内で開けばスコープ設定に関係なく取得できる
+      try {
+        var ctx = liff.getContext();
+        if (ctx && ctx.userId) {
+          lineUserId = ctx.userId;
+          console.log("lineUserId(context):", lineUserId);
+        }
+      } catch(e) { console.log("getContext失敗:", e); }
+
+      // ② IDトークン（openidスコープがあれば取得できる）
+      if (!lineUserId && liff.isLoggedIn()) {
+        try {
+          var idt = liff.getDecodedIDToken();
+          if (idt && idt.sub) {
+            lineUserId = idt.sub;
+            console.log("lineUserId(idToken):", lineUserId);
+          }
+        } catch(e) { console.log("getDecodedIDToken失敗:", e); }
+      }
+
+      // ③ getProfile（profileスコープがあれば取得できる）
+      if (!lineUserId && liff.isLoggedIn()) {
         liff.getProfile()
           .then(function(profile) {
             lineUserId = profile.userId;
@@ -463,7 +483,8 @@
           })
           .catch(function(e) { console.log("getProfile失敗:", e); });
       }
-      // フォールバック：URLパラメータ（uid）から取得
+
+      // ④ フォールバック：URLパラメータ（uid）から取得
       try {
         if (!lineUserId) {
           var params = new URLSearchParams(window.location.search);
